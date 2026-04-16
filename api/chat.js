@@ -1,3 +1,4 @@
+console.log("NEW VERSION DEPLOYED");
 export default async function handler(req, res) {
 
   // ✅ Always set CORS headers FIRST
