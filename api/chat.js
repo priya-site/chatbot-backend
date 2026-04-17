@@ -1,9 +1,8 @@
 export default async function handler(req, res) {
 
-  // ✅ CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "*");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
@@ -15,19 +14,14 @@ export default async function handler(req, res) {
 
   try {
 
-    // ✅ FIX: Properly parse body
-    let body = req.body;
-
-    if (typeof body === "string") {
-      body = JSON.parse(body);
-    }
-
+    // ✅ IMPORTANT FIX
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
     const message = body?.message || "Hello";
 
-    console.log("USER MESSAGE:", message); // 🔍 debug
+    console.log("User message:", message);
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
@@ -45,16 +39,16 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    console.log("GEMINI RESPONSE:", data); // 🔍 debug
+    console.log("Gemini raw:", JSON.stringify(data));
 
     const reply =
       data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "No response";
+      "No response from Gemini";
 
     return res.status(200).json({ reply });
 
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Gemini API failed" });
+    console.error("ERROR:", error);
+    return res.status(500).json({ error: "AI request failed" });
   }
 }
