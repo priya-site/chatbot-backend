@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     // ✅ SIMPLE & RELIABLE
     const message = req.body?.message || "Hello";
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.OPENAI_API_KEY}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
