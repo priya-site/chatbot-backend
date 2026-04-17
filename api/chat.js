@@ -1,12 +1,12 @@
 console.log("NEW VERSION DEPLOYED");
+
 export default async function handler(req, res) {
 
-  // ✅ Always set CORS headers FIRST
+  // ✅ CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "*");
 
-  // ✅ Handle preflight request
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
@@ -16,7 +16,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { message } = req.body;
+    // ✅ SIMPLE & RELIABLE
+    const message = req.body?.message || "Hello";
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -40,6 +41,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
+    console.error(error); // ✅ helps debugging
     return res.status(500).json({ error: "AI request failed" });
   }
 }
