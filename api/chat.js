@@ -1,4 +1,5 @@
 console.log("NEW VERSION DEPLOYED");
+console.log("VERSION 2 - FORCE DEPLOY");
 
 export default async function handler(req, res) {
 
