@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
+  /* ================= CORS ================= */
 
-  // ✅ CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "*");
@@ -11,76 +11,85 @@ export default async function handler(req, res) {
 
   if (req.method !== "POST") {
     return res.status(405).json({
-      error: "Method not allowed"
+      reply: "Method not allowed"
     });
   }
 
   try {
+    /* ================= SAFE BODY PARSING ================= */
 
-    // ✅ Safe body parsing
     const body =
       typeof req.body === "string"
         ? JSON.parse(req.body)
         : req.body;
 
-    const message = body?.message || "Hello";
+    const message = body?.message?.trim() || "";
 
-    console.log("User message:", message);
+    if (!message) {
+      return res.status(200).json({
+        reply: "Please enter a message."
+      });
+    }
 
-    console.log("Using key exists:", !!process.env.GEMINI_API_KEY);
+    console.log("User Message:", message);
+    console.log("OpenAI Key Exists:", !!process.env.OPENAI_API_KEY);
 
-    // ✅ FINAL WORKING GEMINI API CALL
+    /* ================= OPENAI API CALL ================= */
+
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
         },
         body: JSON.stringify({
-          contents: [
+          model: "gpt-4o-mini",
+          messages: [
             {
-              parts: [
-                {
-                  text: `You are a helpful real estate assistant.\nUser: ${message}`
-                }
-              ]
+              role: "system",
+              content: `You are a helpful real estate assistant for PropertyHub.
+
+Help users with:
+- buying properties
+- renting properties
+- selling properties
+- property suggestions
+
+Keep replies short, professional, and helpful.`
+            },
+            {
+              role: "user",
+              content: message
             }
-          ]
+          ],
+          temperature: 0.7,
+          max_tokens: 300
         })
       }
     );
 
     const data = await response.json();
 
-    // ✅ Debug log
     console.log(
-      "Gemini full response:",
+      "OpenAI Response:",
       JSON.stringify(data, null, 2)
     );
 
-    // ❌ API Error Handling
-    if (data.error) {
-      console.log("Gemini Error:", data.error);
+    /* ================= API ERROR ================= */
 
+    if (data.error) {
       return res.status(200).json({
         reply: "API ERROR: " + data.error.message
       });
     }
 
-    // ✅ Safe reply extraction
-    let reply = "No response from Gemini";
+    /* ================= SAFE REPLY ================= */
 
-    if (
-      data.candidates &&
-      data.candidates.length > 0 &&
-      data.candidates[0].content &&
-      data.candidates[0].content.parts
-    ) {
-      reply = data.candidates[0].content.parts
-        .map(part => part.text || "")
-        .join("");
-    }
+    const reply =
+      data.choices?.[0]?.message?.content ||
+      "Sorry, no response received.";
 
     return res.status(200).json({
       reply
@@ -90,7 +99,7 @@ export default async function handler(req, res) {
     console.error("SERVER ERROR:", error);
 
     return res.status(500).json({
-      reply: "Server error. Try again."
+      reply: "Server error. Please try again."
     });
   }
 }
